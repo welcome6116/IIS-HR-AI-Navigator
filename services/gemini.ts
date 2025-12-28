@@ -3,9 +3,26 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { HRContact } from "../types";
 import { IIS_HR_CONTACTS, SYSTEM_PROMPT } from "../constants";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
+// 優先從 process.env 讀取，這在 Vite define 後會生效
+const getApiKey = () => {
+  try {
+    return process.env.API_KEY || "";
+  } catch (e) {
+    return "";
+  }
+};
+
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 export async function processQuery(query: string, history: {role: string, content: string}[]) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    return {
+      response: "API Key is missing. Please check your environment variables.\n密鑰遺失，請檢查環境變數設定。",
+      foundContact: undefined
+    };
+  }
+
   try {
     const model = ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -55,7 +72,7 @@ export async function processQuery(query: string, history: {role: string, conten
   } catch (error) {
     console.error("Gemini API Error:", error);
     return {
-      response: "I'm sorry, I'm having trouble processing your request right now. Please try again or contact the HR office directly.",
+      response: "I'm sorry, I'm having trouble processing your request right now. Please try again or contact the HR office directly.\n抱歉，處理您的請求時出現問題。請稍後再試，或直接聯絡人事室。",
       foundContact: undefined
     };
   }
